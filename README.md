@@ -1,4 +1,4 @@
-# Event Guest List Manager 🎉
+# Event Guest List Manager 
 
 This is a small web app I made to practice HTML, CSS, and JavaScript.
 
