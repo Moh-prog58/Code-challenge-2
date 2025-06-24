@@ -1,137 +1,115 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Guest List</title>
+  <meta charset="UTF-8">
+  <title>Guest List Manager (with JSON Server)</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
-      padding: 20px;
-      background-color: #eee;
+      font-family: sans-serif;
+      margin: 20px;
     }
-    .container {
-      background-color: white;
-      padding: 15px;
-      border-radius: 5px;
-      max-width: 500px;
-      margin: auto;
-    }
+
     h1 {
       text-align: center;
     }
-    form {
-      margin-bottom: 20px;
+
+    #guest-form input {
+      padding: 8px;
+      margin-right: 5px;
     }
-    input, select, button {
-      padding: 10px;
+
+    #guest-list {
+      margin-top: 20px;
+    }
+
+    .guest-item {
       margin: 5px 0;
-      display: block;
-      width: 100%;
+      padding: 8px;
+      background-color: #f2f2f2;
+      border: 1px solid #ddd;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
-    ul {
-      list-style: none;
-      padding: 0;
-    }
-    li {
-      background: #f4f4f4;
-      padding: 10px;
-      margin-bottom: 10px;
-    }
-    .btns button {
-      margin-right: 10px;
-    }
-    .attending {
-      color: green;
-    }
-    .not-attending {
-      color: red;
+
+    .delete-btn {
+      background-color: red;
+      color: white;
+      border: none;
+      padding: 4px 8px;
+      cursor: pointer;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Guest List</h1>
-    <form id="guest-form">
-      <input type="text" id="guest-name" placeholder="Name" required />
-      <select id="guest-category">
-        <option value="Friend">Friend</option>
-        <option value="Family">Family</option>
-        <option value="Colleague">Colleague</option>
-      </select>
-      <button type="submit">Add Guest</button>
-    </form>
-    <ul id="guest-list"></ul>
-  </div>
+
+  <h1>Event Guest List (API)</h1>
+
+  <form id="guest-form">
+    <input type="text" id="guest-name" placeholder="Enter guest name" required>
+    <button type="submit">Add Guest</button>
+  </form>
+
+  <div id="guest-list"></div>
 
   <script>
-    document.addEventListener("DOMContentLoaded", function() {
-      let form = document.getElementById("guest-form");
-      let nameInput = document.getElementById("guest-name");
-      let categoryInput = document.getElementById("guest-category");
-      let list = document.getElementById("guest-list");
+    const form = document.getElementById('guest-form');
+    const guestInput = document.getElementById('guest-name');
+    const guestList = document.getElementById('guest-list');
+    const API_URL = 'http://localhost:3000/guests';
 
-      form.addEventListener("submit", function(e) {
-        e.preventDefault();
+    // Display guests from server
+    function loadGuests() {
+      fetch(API_URL)
+        .then(res => res.json())
+        .then(guests => {
+          guestList.innerHTML = '';
+          guests.forEach(guest => {
+            const div = document.createElement('div');
+            div.className = 'guest-item';
 
-        let name = nameInput.value;
-        let category = categoryInput.value;
+            const nameSpan = document.createElement('span');
+            nameSpan.textContent = guest.name;
 
-        if (name === "") return;
-        if (list.children.length >= 10) {
-          alert("Only 10 guests allowed");
-          return;
-        }
+            const deleteBtn = document.createElement('button');
+            deleteBtn.textContent = 'Delete';
+            deleteBtn.className = 'delete-btn';
+            deleteBtn.onclick = () => deleteGuest(guest.id);
 
-        let li = document.createElement("li");
+            div.appendChild(nameSpan);
+            div.appendChild(deleteBtn);
+            guestList.appendChild(div);
+          });
+        });
+    }
 
-        let span = document.createElement("span");
-        span.textContent = name + " (" + category + ") ";
-
-        let rsvp = document.createElement("span");
-        rsvp.textContent = "Not Attending";
-        rsvp.className = "not-attending";
-        rsvp.style.cursor = "pointer";
-        rsvp.onclick = function() {
-          if (rsvp.textContent === "Attending") {
-            rsvp.textContent = "Not Attending";
-            rsvp.className = "not-attending";
-          } else {
-            rsvp.textContent = "Attending";
-            rsvp.className = "attending";
-          }
-        }
-
-        let time = document.createElement("div");
-        time.textContent = new Date().toLocaleString();
-
-        let editBtn = document.createElement("button");
-        editBtn.textContent = "Edit";
-        editBtn.onclick = function() {
-          let newName = prompt("Edit name:", name);
-          if (newName) {
-            span.textContent = newName + " (" + category + ") ";
-          }
-        };
-
-        let delBtn = document.createElement("button");
-        delBtn.textContent = "Remove";
-        delBtn.onclick = function() {
-          list.removeChild(li);
-        };
-
-        let btns = document.createElement("div");
-        btns.className = "btns";
-        btns.appendChild(editBtn);
-        btns.appendChild(delBtn);
-
-        li.appendChild(span);
-        li.appendChild(rsvp);
-        li.appendChild(time);
-        li.appendChild(btns);
-        list.appendChild(li);
-
-        nameInput.value = "";
-      });
+    // Add new guest
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      const name = guestInput.value.trim();
+      if (name !== '') {
+        fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name })
+        })
+        .then(() => {
+          guestInput.value = '';
+          loadGuests();
+        });
+      }
     });
+
+    // Delete guest by ID
+    function deleteGuest(id) {
+      fetch(`${API_URL}/${id}`, {
+        method: 'DELETE'
+      }).then(loadGuests);
+    }
+
+    // Initial load
+    loadGuests();
   </script>
+
 </body>
 </html>
